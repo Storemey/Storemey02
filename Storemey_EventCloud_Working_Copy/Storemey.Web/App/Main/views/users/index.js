@@ -1,0 +1,86 @@
+﻿(function () {
+    //angular.module('app').controller('app.views.users.index', [
+    //    '$scope', '$timeout', '$uibModal', 'abp.services.app.user',
+    //    function ($scope, $timeout, $uibModal, userService) {
+    //        var vm = this;
+
+    var controllerId = 'app.views.users.index';
+    angular.module('app').controller(controllerId, [
+        '$scope', '$modal', 'abp.services.app.user',
+        function ($scope, $modal,  userService) {
+            var vm = this;
+            var $uibModal = $modal;
+
+            vm.users = [];
+
+            function getUsers() {
+               
+                vm.filters = {
+                    temp: false
+                };
+                userService.getList(vm.filters).then(function (result) {
+                    vm.users = result.data.items;
+                });
+            }
+
+            vm.openUserCreationModal = function () {
+                var modalInstance = $uibModal.open({
+                    templateUrl: abp.appPath +  'App/Main/views/users/createModal.cshtml',
+                    controller: 'app.views.users.createModal as vm',
+                    backdrop: 'static'
+                });
+
+                modalInstance.rendered.then(function () {
+                    $.AdminBSB.input.activate();
+                });
+
+                modalInstance.result.then(function () {
+                    getUsers();
+                });
+            };
+
+            vm.openUserEditModal = function (user) {
+                var modalInstance = $uibModal.open({
+                    templateUrl: '/App/Main/views/users/editModal.cshtml',
+                    controller: 'app.views.users.editModal as vm',
+                    backdrop: 'static',
+                    resolve: {
+                        id: function () {
+                            return user.id;
+                        }
+                    }
+                });
+
+                modalInstance.rendered.then(function () {
+                    $timeout(function () {
+                        $.AdminBSB.input.activate();
+                    }, 0);
+                });
+
+                modalInstance.result.then(function () {
+                    getUsers();
+                });
+            };
+
+            vm.delete = function (user) {
+                abp.message.confirm(
+                    "Delete user '" + user.userName + "'?",
+                    function (result) {
+                        if (result) {
+                            userService.delete({ id: user.id })
+                                .then(function () {
+                                    abp.notify.info("Deleted user: " + user.userName);
+                                    getUsers();
+                                });
+                        }
+                    });
+            }
+
+            vm.refresh = function () {
+                getUsers();
+            };
+
+            getUsers();
+        }
+    ]);
+})();
